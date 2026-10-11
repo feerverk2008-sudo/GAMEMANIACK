@@ -1,0 +1,8 @@
+node_modules/
+world.json
+data/
+work/
+outputs/
+.wall-preview.png
+.DS_Store
+
