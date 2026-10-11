@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#151211">
+  <meta name="game-server" content="">
+  <title>Последний сигнал — пиксельный хоррор</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="game">
+  <canvas id="world"></canvas>
+  <div id="editorStatus" class="editor-status hidden">0 клеток · ПРОБЕЛ — поставить/снять стену</div>
+  <nav id="editorTools" class="editor-tools hidden" aria-label="Инструменты расстановки">
+    <button data-editor-tool="wall" class="selected">▧ Стена</button>
+    <button data-editor-tool="pallet">▤ Поддон</button>
+    <button data-editor-tool="locker">▥ Шкаф</button>
+    <small>ПРОБЕЛ — поставить/снять · R — повернуть поддон</small>
+  </nav>
+  <button id="editorExit" class="editor-exit hidden">СОХРАНИТЬ КОЛЛИЗИИ И ВЫЙТИ</button>
+  <header class="topbar">
+    <div class="brand"><span class="sigil">✦</span><div><b>ПОСЛЕДНИЙ СИГНАЛ</b><small>асимметричный хоррор</small></div></div>
+    <div class="world-info"><span id="mapName">⌖ БУНКЕР</span><span id="phase">◷ 23:40</span><span id="objective">⚡ Генераторы 0 / 8</span></div>
+    <button id="soundBtn" class="icon-button" title="Выключить звук" aria-label="Выключить звук">🔊</button>
+    <button id="menuBtn" class="icon-button">☰</button>
+  </header>
+  <section class="hud">
+    <div class="role-tag" id="roleTag">ВЫЖИВШИЙ</div>
+    <div class="stat"><b>❤</b><div class="meter"><i id="healthBar" class="health"></i></div><small id="healthText">3 удара</small></div>
+    <div class="stat"><b>⌁</b><div class="meter"><i id="staminaBar" class="stamina"></i></div><small>БЕГ</small></div>
+    <div id="contextHint">E — действие</div>
+  </section>
+  <aside class="map-card"><canvas id="minimap" width="120" height="120"></canvas><span>РАДАР</span></aside>
+  <div id="toast" class="toast"></div>
+  <div id="pickup" class="pickup hidden"><span>ПОДНИМАЮ ЖЕРТВУ</span><i><b id="pickupBar"></b></i></div>
+  <section class="touch-controls">
+    <div id="joystick" class="joystick"><div class="stick"></div></div>
+    <div class="touch-actions">
+      <button data-action="sprint">⇧<small>БЕГ</small></button>
+      <button data-action="attack">☠<small>УДАР</small></button>
+      <button data-action="interact">E<small>ДЕЙСТВИЕ</small></button>
+      <button id="placeWallButton" class="hidden">▧<small>СТЕНА</small></button>
+    </div>
+  </section>
+  <section id="welcome" class="overlay">
+    <div class="welcome-card">
+      <div class="eyebrow">ПОДЗЕМНЫЙ КОМПЛЕКС · ОДИН МАНЬЯК ПРОТИВ ПЯТИ</div>
+      <h1>ПОСЛЕДНИЙ<br><em>СИГНАЛ</em></h1>
+      <p>Скрывайся за бетонными стенами.<br>Запускай генераторы и ищи выход.</p>
+      <label for="nickname">ИМЯ В МАТЧЕ</label>
+      <input id="nickname" maxlength="16" placeholder="Например, Ника">
+      <div class="role-choice">
+        <button class="selected" data-role="survivor"><span class="portrait girl"><img src="assets/survivors/survivor-red.png"></span><b>ВЫЖИВШИЙ</b><small>почини генераторы</small></button>
+        <button data-role="killer"><span class="portrait killer"><img src="assets/killer/masked-killer.png"></span><b>МАНЬЯК</b><small>сорви ремонт</small></button>
+      </div>
+      <div class="start-modes">
+        <button data-start="play" class="primary">ИГРАТЬ <span>→</span></button>
+        <button data-start="open">ОТКРЫТЫЙ МАТЧ</button>
+        <button data-start="bots">БОТЫ</button>
+        <button data-start="friends">С ДРУЗЬЯМИ</button>
+        <button data-start="edit">НАСТРОИТЬ КОЛЛИЗИИ</button>
+      </div>
+      <div class="key-hint">WASD / СТРЕЛКИ — ХОДЬБА　 SHIFT — РЫВОК　 УДЕРЖИВАЙ E — ДЕЙСТВИЕ　 ПРОБЕЛ — УДАР<br>РЕДАКТОР: ВЫБЕРИ СТЕНУ, ПОДДОН ИЛИ ШКАФ, ЗАТЕМ НАЖМИ ПРОБЕЛ НА КЛЕТКЕ</div>
+      <p class="server-note" id="serverNote">Открытая комната до 5 выживших и маньяка · коллизии общие для игроков и ботов</p>
+    </div>
+  </section>
+  <section id="pause" class="overlay hidden">
+    <div class="modal">
+      <button class="close" data-close="pause">×</button>
+      <div class="eyebrow">ПЕРЕДЫШКА</div><h2>Матч</h2><p id="playerLabel">—</p>
+      <div class="menu-buttons"><button id="friendsBtn">＋ Добавить друзей</button><button data-close="pause">Продолжить</button></div>
+      <div id="friendsPanel" class="inline-panel hidden"><input id="friendName" maxlength="16" placeholder="Точный никнейм друга"><button id="addFriend">Добавить</button><div id="friendList"></div></div>
+      <div class="online-list"><span>ИГРОКИ В МАТЧЕ</span><div id="players"></div></div>
+    </div>
+  </section>
+  <div id="connection" class="connection">○ Локальный матч</div>
+</main>
+<script src="client.js"></script>
+</body>
+</html>
+

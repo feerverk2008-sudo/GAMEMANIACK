@@ -1,0 +1,59 @@
+name: Опубликовать игру на GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Получить файлы игры
+        uses: actions/checkout@v6
+      - name: Подготовить статическую версию
+        env:
+          GAME_SERVER_URL: ${{ vars.GAME_SERVER_URL }}
+        run: |
+          mkdir -p _site
+          cp index.html client.js style.css _site/
+          cp -R assets _site/assets
+          touch _site/.nojekyll
+          python3 - <<'PY'
+          import html
+          import os
+          from pathlib import Path
+
+          address = os.environ.get("GAME_SERVER_URL", "").strip()
+          if address:
+              if not address.startswith("wss://"):
+                  raise SystemExit("GAME_SERVER_URL должен начинаться с wss://")
+              page = Path("_site/index.html")
+              source = page.read_text(encoding="utf-8")
+              marker = '<meta name="game-server" content="">'
+              if marker not in source:
+                  raise SystemExit("В index.html не найден метатег game-server")
+              page.write_text(source.replace(marker, f'<meta name="game-server" content="{html.escape(address, quote=True)}">'), encoding="utf-8")
+          PY
+      - name: Настроить GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Загрузить сайт
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - name: Опубликовать сайт
+        id: deployment
+        uses: actions/deploy-pages@v5
+

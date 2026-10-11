@@ -1,0 +1,10 @@
+{
+  "name": "last-signal-horror",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Асимметричный браузерный хоррор: один маньяк против пяти выживших",
+  "scripts": { "start": "node server.js" },
+  "dependencies": {},
+  "engines": { "node": ">=18" }
+}
+
