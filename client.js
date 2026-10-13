@@ -7,8 +7,8 @@ function getSocketUrl(){const custom=document.querySelector('meta[name="game-ser
 const SOCKET_URL=getSocketUrl();
 if(!SOCKET_URL){document.querySelectorAll('[data-start="open"],[data-start="friends"]').forEach(b=>{b.disabled=true;b.title='Для онлайн-матча нужен WebSocket-сервер'});const note=document.querySelector('#serverNote');if(note)note.textContent='Автономная версия: играй с ботами. Онлайн-матчи и общая карта требуют отдельный WebSocket-сервер.'}
 const survivorImg=new Image(),killerImg=new Image(),arenaImg=new Image();survivorImg.src='assets/survivors/survivor-red.png';killerImg.src='assets/killer/masked-killer.png';arenaImg.src='assets/bunker-map.png';
-// Камера держит персонажа крупно в кадре: почти в 3 раза ближе к арене.
-const ZOOM=2.8;
+// Базовый масштаб для 1280×720; на узких экранах камера отъезжает, сохраняя обзор арены.
+const BASE_ZOOM=2.8;let ZOOM=BASE_ZOOM;
 const p={x:MW*TILE/2,y:MH*TILE/2+170,nick:'',role:'survivor',hp:3,stamina:100,dir:1,moving:false,injured:false,down:false,carried:false,hooks:0,cellEndsAt:0,eliminated:false,sprint:0,invuln:0,attack:0,invisible:false,hiddenIn:null};
 let role='survivor',mapId='bunker',matchMode='play',started=false,editorMode=false,editorReady=false,finishAfterSync=false,showCollision=false,ws=null,online=false,keys={},joy={x:0,y:0},others=new Map(),bots=[],last=performance.now(),toastTimer,networkAt=0,hitAt=0,pickupTime=0,rescueTime=0,rescueTarget=null,broken=0,genDone=0,matchTime=0,gameOver=false,botThinkAt=0,trailTick=0,killerBoost=0;
 const gens=[],blood=[],particles=[],walls=[],CELL={x:48*TILE+16,y:32*TILE+16},gate={x:MW*TILE/2,y:2*TILE,progress:0,open:false};
@@ -55,7 +55,7 @@ const audio=(()=>{
  function setThreat(value){if(!active||!ctx)return;threat=Math.max(0,Math.min(1,value));if(Math.abs(threat-lastPressure)>.025){smooth(threatGain.gain,.001+threat*.19,.35);smooth(ambience.gain,.14+threat*.14,.55);smooth(windGain.gain,.022+threat*.055,.6);lastPressure=threat}if(threat>.08&&ctx.currentTime>=nextPulse){const t=ctx.currentTime;const force=.055+threat*.095;tone(64,.12,'sine',force,t);tone(47,.17,'sine',force*.78,t+.14);nextPulse=t+1.35-threat*.82}}
  return{start,stop,toggle,step,repair,swing,hit,unlockGate,complete,setThreat};
 })();
-function resize(){const d=Math.min(devicePixelRatio||1,2);c.width=innerWidth*d;c.height=innerHeight*d;g.setTransform(d,0,0,d,0,0)}addEventListener('resize',resize);resize();
+function resize(){const d=Math.min(devicePixelRatio||1,2);c.width=innerWidth*d;c.height=innerHeight*d;const viewFit=Math.min(1,innerWidth/1280,innerHeight/720);ZOOM=BASE_ZOOM*Math.max(.3,viewFit);g.setTransform(d,0,0,d,0,0)}addEventListener('resize',resize);resize();
 function rand(x,y){let n=Math.imul(x|0,374761393)^Math.imul(y|0,668265263);n=Math.imul(n^(n>>>13),1274126177);return((n^(n>>>16))>>>0)/4294967295}
 // Базовых стен и столов больше нет: заблокированы только клетки, отмеченные игроком.
 function tile(tx,ty){if(tx<0||ty<0||tx>=MW||ty>=MH)return'wall';return collisionTiles.has(ty*MW+tx)?'wall':'floor'}
