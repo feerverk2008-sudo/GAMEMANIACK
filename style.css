@@ -17,3 +17,15 @@
 @media(pointer:coarse){.touch-controls{display:flex}}
 @media(max-width:650px){.touch-controls{left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:calc(70px + env(safe-area-inset-bottom,0px))}.touch-actions button{width:46px;height:46px;min-width:46px;min-height:46px}}
 
+
+
+/* На телефонах убираем крупные подписи и мини-карту: арену должно быть видно целиком. */
+@media (pointer: coarse) and (max-width: 900px) {
+  .brand, .world-info, .map-card, .connection { display: none !important; }
+  .topbar { padding: max(8px, env(safe-area-inset-top, 0px)) 10px 6px; background: none; }
+  .topbar #soundBtn { margin-left: auto; }
+  .hud { top: max(10px, env(safe-area-inset-top, 0px)); left: 10px; gap: 5px; }
+  .role-tag, #contextHint, .stat small { display: none; }
+  .meter { width: 72px; height: 7px; }
+  #welcome h1 { display: none; }
+}
