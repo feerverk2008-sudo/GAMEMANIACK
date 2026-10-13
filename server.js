@@ -184,6 +184,18 @@ wss.on('connection', ws => {
       send(ws, { type: 'collisionMap', tiles: collisionList(), props: propList() });
       return;
     }
+    if (msg.type === 'restoreMap') {
+      // Разрешаем вернуть копию браузера только редактору и только на пустую карту.
+      if (!ws.editor || collisionTiles.size || placedProps.size) return;
+      const tiles = Array.isArray(msg.tiles) ? msg.tiles.filter(n => Number.isInteger(n) && n >= 0 && n < MAP_CELLS) : [];
+      const props = Array.isArray(msg.props) ? msg.props.filter(p => p && Number.isInteger(p.index) && p.index >= 0 && p.index < MAP_CELLS && ['pallet', 'locker'].includes(p.type)) : [];
+      for (const index of tiles) collisionTiles.add(index);
+      for (const p of props) if (!collisionTiles.has(p.index)) placedProps.set(p.index, { index: p.index, type: p.type, rot: p.rot === 1 ? 1 : 0, down: false, broken: false, hiddenBy: null });
+      ejectPlayersFromWalls(); persist();
+      const packet = JSON.stringify({ type: 'collisionMap', tiles: collisionList(), props: propList() });
+      for (const client of wss.clients) if (client.readyState === 1 && (client.joined || client.editor || client.mapSync)) client.send(packet);
+      return;
+    }
     if (msg.type === 'collision') {
       if (!ws.editor && !ws.joined && !(ws.mapSync && msg.blocked === false)) return;
       const index = Number(msg.index), blocked = msg.blocked === true;
@@ -269,12 +281,14 @@ wss.on('connection', ws => {
       if (ws.player.eliminated || ws.player.down || ws.player.invisible) return;
       const x = Number(msg.x), y = Number(msg.y);
       if (!Number.isFinite(x) || !Number.isFinite(y) || Math.abs(x) > 1e7 || Math.abs(y) > 1e7) return;
+      const previousX = ws.player.x, previousY = ws.player.y;
       ws.player.x = x; ws.player.y = y;
+      // Здоровье и состояния берутся только с сервера; движение передаёт координаты.
+      ws.player.moving = Math.hypot(x - previousX, y - previousY) > 0.5;
       if (!isFreePosition(x, y, ws.player.role === 'killer' ? 12 : 9)) {
         ejectPlayersFromWalls();
         send(ws, { type: 'position', x: ws.player.x, y: ws.player.y });
       }
-      for (const key of ['hp', 'down', 'carried', 'injured', 'moving', 'invisible']) if (typeof msg[key] === 'boolean' || key === 'hp' && Number.isFinite(msg[key])) ws.player[key] = msg[key];
       if (ws.player.role === 'killer') for (const survivor of players.values()) if (survivor.carried) { survivor.x = ws.player.x - 14; survivor.y = ws.player.y + 4; }
       saved.players[ws.player.nick.toLocaleLowerCase('ru')] = { x: ws.player.x, y: ws.player.y, hero: ws.player.hero };
       return;
@@ -288,7 +302,15 @@ wss.on('connection', ws => {
       }
       if (msg.action === 'hit' && ws.player.role === 'killer') {
         const target = [...players.values()].find(p => p.nick === String(msg.target) && p.role === 'survivor');
-        if (target && !target.invisible && !target.eliminated && Math.hypot(target.x - ws.player.x, target.y - ws.player.y) < 85 && !target.down) { target.hp = Math.max(0, Math.min(3, Number(msg.hp) || 0)); target.down = target.hp === 0; target.injured = target.hp === 1; }
+        const now = Date.now();
+        if (target && now - (ws.player.lastHitAt || 0) >= 450 && !target.invisible && !target.eliminated && Math.hypot(target.x - ws.player.x, target.y - ws.player.y) < 85 && !target.down) {
+          // Попадание уменьшает серверное HP, поэтому пакет движения не может его отменить.
+          ws.player.lastHitAt = now;
+          target.hp = Math.max(0, Math.min(3, target.hp ?? 3) - 1);
+          target.down = target.hp === 0;
+          target.injured = target.hp === 1;
+          if (target.down) target.moving = false;
+        }
       }
       if (msg.action === 'pickup' && ws.player.role === 'killer') {
         const target = [...players.values()].find(p => p.nick === String(msg.target) && p.role === 'survivor' && p.hp <= 1 && !p.down && Math.hypot(p.x - ws.player.x, p.y - ws.player.y) < 95);
